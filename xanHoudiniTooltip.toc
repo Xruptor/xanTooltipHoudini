@@ -1,0 +1,7 @@
+## Interface: 40000
+## Title: xanHoudiniTooltip
+## Notes: Hides the game tooltip while in combat.
+## Author: Xruptor
+## Version: 1.0
+
+xanHoudiniTooltip.lua
