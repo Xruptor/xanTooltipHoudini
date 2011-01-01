@@ -12,19 +12,12 @@ local function processAuraTooltip(self, unitid, index, filter)
 	auraSwitch = true
 end
 
-local function processCombatTooltip(self, unitid, index, filter)
-	if InCombatLockdown() then
-		self:Hide()
-		return
-	end
-end
-
 function f:PLAYER_LOGIN()
 
 	-- GameTooltip:HookScript("OnShow", function(self)
 		-- local name, unitid = self:GetUnit()
 		-- local parent = self:GetParent()
-		-- if InCombatLockdown() and not auraSwitch then
+		-- if InCombatLockdown() then
 			-- self:Hide()
 			-- return
 		-- end
@@ -44,15 +37,6 @@ function f:PLAYER_LOGIN()
 	hooksecurefunc(GameTooltip, "SetUnitAura", processAuraTooltip)
 	hooksecurefunc(GameTooltip, "SetUnitBuff", processAuraTooltip)
 	hooksecurefunc(GameTooltip, "SetUnitDebuff", processAuraTooltip)
-
-	-- hooksecurefunc(GameTooltip, "SetUnit", processCombatTooltip)
-	-- hooksecurefunc(GameTooltip, "SetAction", processCombatTooltip)
-	-- hooksecurefunc(GameTooltip, "SetPetAction", processCombatTooltip)
-	-- hooksecurefunc(GameTooltip, "SetShapeshift", processCombatTooltip)
-	-- hooksecurefunc(GameTooltip, "SetInventoryItem", processCombatTooltip)
-	
-	-- hooksecurefunc(GameTooltip, "SetBagItem", processCombatTooltip)
-	-- hooksecurefunc(GameTooltip, "SetHyperlink", processCombatTooltip)
 
 	self:UnregisterEvent("PLAYER_LOGIN")
 	self.PLAYER_LOGIN = nil
