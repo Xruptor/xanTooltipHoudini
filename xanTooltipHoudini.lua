@@ -21,19 +21,21 @@ function f:PLAYER_LOGIN()
 	SLASH_XANTOOLTIPHOUDINI1 = "/xht"
 	SlashCmdList["XANTOOLTIPHOUDINI"] = function(msg)
 	
-	local a,b,c = strfind(msg, "(%S+)") --contiguous string of non-space characters
-	
-	if a then
-		if c and c:lower() == "auras" then
-			if XTH_DB.showAuras then
-				XTH_DB.showAuras = false
-				DEFAULT_CHAT_FRAME:AddMessage("XanTooltipHoudini: Aura (Buff/Debuff) toolips are now [|cFF99CC33OFF|r]")
-			else
-				XTH_DB.showAuras = true
-				DEFAULT_CHAT_FRAME:AddMessage("XanTooltipHoudini: Aura (Buff/Debuff) toolips are now [|cFF99CC33ON|r]")
+		local a,b,c = strfind(msg, "(%S+)") --contiguous string of non-space characters
+		
+		if a then
+			if c and c:lower() == "auras" then
+				if XTH_DB.showAuras then
+					XTH_DB.showAuras = false
+					DEFAULT_CHAT_FRAME:AddMessage("XanTooltipHoudini: Aura (Buff/Debuff) toolips are now [|cFF99CC33OFF|r]")
+				else
+					XTH_DB.showAuras = true
+					DEFAULT_CHAT_FRAME:AddMessage("XanTooltipHoudini: Aura (Buff/Debuff) toolips are now [|cFF99CC33ON|r]")
+				end
+				return true
 			end
-			return true
 		end
+	
 	end
 	
 	GameTooltip:HookScript("OnShow", function(self)
