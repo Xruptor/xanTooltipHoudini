@@ -18,7 +18,7 @@ function f:PLAYER_LOGIN()
 	if not XTH_DB then XTH_DB = {} end
 	if XTH_DB.showAuras == nil then XTH_DB.showAuras = true end
 
-	SLASH_XANTOOLTIPHOUDINI1 = "/xht"
+	SLASH_XANTOOLTIPHOUDINI1 = "/xth"
 	SlashCmdList["XANTOOLTIPHOUDINI"] = function(msg)
 	
 		local a,b,c = strfind(msg, "(%S+)") --contiguous string of non-space characters
@@ -27,15 +27,17 @@ function f:PLAYER_LOGIN()
 			if c and c:lower() == "auras" then
 				if XTH_DB.showAuras then
 					XTH_DB.showAuras = false
-					DEFAULT_CHAT_FRAME:AddMessage("XanTooltipHoudini: Aura (Buff/Debuff) toolips are now [|cFF99CC33OFF|r]")
+					DEFAULT_CHAT_FRAME:AddMessage("xanTooltipHoudini: Aura (Buff/Debuff) toolips are now [|cFF99CC33OFF|r]")
 				else
 					XTH_DB.showAuras = true
-					DEFAULT_CHAT_FRAME:AddMessage("XanTooltipHoudini: Aura (Buff/Debuff) toolips are now [|cFF99CC33ON|r]")
+					DEFAULT_CHAT_FRAME:AddMessage("xanTooltipHoudini: Aura (Buff/Debuff) toolips are now [|cFF99CC33ON|r]")
 				end
 				return true
 			end
 		end
 	
+		DEFAULT_CHAT_FRAME:AddMessage("xanTooltipHoudini")
+		DEFAULT_CHAT_FRAME:AddMessage("/xth auras - toggles Aura (Buff/Debuff) tooltips (ON/OFF)")
 	end
 	
 	GameTooltip:HookScript("OnShow", function(self)
@@ -54,9 +56,16 @@ function f:PLAYER_LOGIN()
 	
 	GameTooltip:HookScript("OnUpdate", function(self, elapsed)
 		--check if showauras is on
-		if XTH_DB and XTH_DB.showAuras then
-			--hide everything BUT auras
-			if self:IsShown() and InCombatLockdown() and not auraSwitch then
+		if XTH_DB and XTH_DB.showAuras and self:IsShown() then
+			--hide everything BUT auras, and temporary weapon enchants ;P
+			local owner = self:GetOwner()
+			if InCombatLockdown() and not auraSwitch then
+				--check for temporary enchant frame
+				if owner and owner:GetParent() and owner:GetParent():GetName() and owner:GetParent():GetName() == "TemporaryEnchantFrame" then
+					--do nothing
+					return
+				end
+				--otherwise hide it
 				self:Hide()
 			end
 		end
