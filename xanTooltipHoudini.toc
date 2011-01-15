@@ -2,7 +2,7 @@
 ## Title: xanTooltipHoudini
 ## Notes: Hides the game tooltip while in combat.
 ## Author: Xruptor
-## Version: 1.1
+## Version: 1.2
 ## SavedVariables: XTH_DB
 
 xanTooltipHoudini.lua
