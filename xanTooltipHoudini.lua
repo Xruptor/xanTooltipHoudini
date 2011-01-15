@@ -4,6 +4,15 @@ f:SetScript("OnEvent", function(self, event, ...) if self[event] then return sel
 
 local auraSwitch = false
 
+local ignoreFrames = {
+	["TemporaryEnchantFrame"] = true,
+	["QuestInfoRewardsFrame"] = true,
+}
+--add the loot frames
+for i=1, NUM_GROUP_LOOT_FRAMES do
+	ignoreFrames["GroupLootFrame" .. i] = true
+end
+	
 ----------------------
 --      Enable      --
 ----------------------
@@ -44,6 +53,11 @@ function f:PLAYER_LOGIN()
 		--only use this if showAuras is false
 		if XTH_DB and not XTH_DB.showAuras then
 			if InCombatLockdown() then
+				local owner = self:GetOwner()
+				if owner and owner:GetParent() and owner:GetParent():GetName() and ignoreFrames[owner:GetParent():GetName()] then
+					--do nothing
+					return
+				end
 				self:Hide()
 				return
 			end
@@ -61,7 +75,7 @@ function f:PLAYER_LOGIN()
 			local owner = self:GetOwner()
 			if InCombatLockdown() and not auraSwitch then
 				--check for temporary enchant frame
-				if owner and owner:GetParent() and owner:GetParent():GetName() and owner:GetParent():GetName() == "TemporaryEnchantFrame" then
+				if owner and owner:GetParent() and owner:GetParent():GetName() and ignoreFrames[owner:GetParent():GetName()] then
 					--do nothing
 					return
 				end
