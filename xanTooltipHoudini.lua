@@ -7,6 +7,7 @@ local auraSwitch = false
 local ignoreFrames = {
 	["TemporaryEnchantFrame"] = true,
 	["QuestInfoRewardsFrame"] = true,
+	["MinimapCluster"] = true,
 }
 --add the loot frames
 for i=1, NUM_GROUP_LOOT_FRAMES do
