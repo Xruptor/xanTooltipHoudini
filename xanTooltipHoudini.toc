@@ -1,8 +1,8 @@
-## Interface: 40200
+## Interface: 40300
 ## Title: xanTooltipHoudini
 ## Notes: Hides the game tooltip while in combat.
 ## Author: Xruptor
-## Version: 1.5
+## Version: 1.6
 ## SavedVariables: XTH_DB
 
 xanTooltipHoudini.lua
