@@ -43,34 +43,62 @@ local function processAuraTooltip(self, unitid, index, filter)
 	auraSwitch = true
 end
 
+--this is to prevent spamming check of the tooltip.
+local lastTooltipTarget = ""
+
 local function checkPlayerQuest()
 	for i=1,GameTooltip:NumLines() do
 		local ttText = getglobal("GameTooltipTextLeft" .. i)
-		if ttText:GetText() and playerQuests[ttText:GetText()] ~= nil then
+		if ttText and ttText:GetText() and lastTooltipTarget == ttText:GetText() then 
+			return true
+		else
+			lastTooltipTarget = ""
+		end
+		if ttText and ttText:GetText() and playerQuests[ttText:GetText()] ~= nil then
+			local ttTextCache = getglobal("GameTooltipTextLeft1")
+			if ttTextCache and ttTextCache:GetText() then
+				lastTooltipTarget = ttTextCache:GetText()
+			end
 			return true
 		end
 	end
+	lastTooltipTarget = ""
 	return false
 end
 
 function f:doQuestTitleGrab()
 	--we have to expand and then collaspe headers because GetQuestLogTitle won't return anything if it's closed
 	local saved_position = GetQuestLogSelection()
+	
 	for i=1,GetNumQuestLogEntries() do
-	   local _,_,_,_,_,isCollapsed,isComplete = GetQuestLogTitle(i)
-	   if isCollapsed then
-		  local count = GetNumQuestLogEntries()
-		  ExpandQuestHeader(i)
-		  count = GetNumQuestLogEntries() - count
-		  for j=i+1,i+count do
-			 local title,_,_,_,_,_,isComplete = GetQuestLogTitle(j)
+		local _,_,_,_,_,isCollapsed,isComplete = GetQuestLogTitle(i)
+		
+		if isCollapsed then
+			local count = GetNumQuestLogEntries()
+
+			ExpandQuestHeader(i)
+			count = GetNumQuestLogEntries() - count
+			
+			for j=i+1,i+count do
+				local questTitle, _, _, _, isHeader = GetQuestLogTitle(j)
 				--store the player quest
-				playerQuests[title] = title
-		  end
-		  CollapseQuestHeader(i)
-	   end
+				if questTitle and not isHeader then
+					playerQuests[questTitle] = questTitle
+				end
+			end
+			
+			CollapseQuestHeader(i)
+		else
+			local questTitle, _, _, _, isHeader = GetQuestLogTitle(i);
+			if questTitle and not isHeader then
+				playerQuests[questTitle] = questTitle
+			end
+		end
 	end
 	SelectQuestLogEntry(saved_position)
+	
+	--reset
+	lastTooltipTarget = ""
 end
 
 function f:PLAYER_LOGIN()
@@ -115,7 +143,7 @@ function f:PLAYER_LOGIN()
 	GameTooltip:HookScript("OnShow", function(self)
 		local canPass = false
 		if XTH_DB and not XTH_DB.showAuras then canPass = true end
-		if XTH_DB and XTH_DB.showQuestObj and checkPlayerQuest() then canPass = true end
+		if InCombatLockdown() and XTH_DB and XTH_DB.showQuestObj and checkPlayerQuest() then canPass = true end --we don't want to constantly scan tooltip, only in combat
 		
 		if XTH_DB and canPass then
 			if InCombatLockdown() then
@@ -139,8 +167,8 @@ function f:PLAYER_LOGIN()
 	GameTooltip:HookScript("OnUpdate", function(self, elapsed)
 		local canPass = false
 		if XTH_DB and XTH_DB.showAuras then canPass = true end
-		if XTH_DB and XTH_DB.showQuestObj and checkPlayerQuest() then canPass = true end
-			
+		if InCombatLockdown() and XTH_DB and XTH_DB.showQuestObj and checkPlayerQuest() then canPass = true end --we don't want to constantly scan tooltip, only in combat
+		
 		if XTH_DB and canPass and self:IsShown() then
 			local owner = self:GetOwner()
 			if InCombatLockdown() then
