@@ -157,7 +157,9 @@ function f:PLAYER_LOGIN()
 					return
 				end
 				if not XTH_DB.showAuras or not XTH_DB.showQuestObj then
-					self:Hide()
+					if not IsShiftKeyDown() then
+						self:Hide()
+					end
 				end
 				return
 			end
@@ -183,7 +185,9 @@ function f:PLAYER_LOGIN()
 				end				
 				--otherwise hide it
 				if not auraSwitch or not XTH_DB.showQuestObj then
-					self:Hide()
+					if not IsShiftKeyDown() then
+						self:Hide()
+					end
 				end
 			end
 		end
