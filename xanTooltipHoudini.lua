@@ -166,6 +166,14 @@ function f:PLAYER_LOGIN()
 		end
 	end)
 	
+	--check if it's one of those new small buff icons that show ontop of the target mob nameplate
+	hooksecurefunc(GameTooltip,"SetUnitAura",function(self,unit,index,filter)
+		--local caster = select(8,UnitAura(unit,index,filter))
+		if InCombatLockdown() and string.find(unit, "nameplate") then
+			self:Hide()
+		end
+	end)
+
 	GameTooltip:HookScript("OnUpdate", function(self, elapsed)
 		local canPass = false
 		if XTH_DB and XTH_DB.showAuras then canPass = true end
@@ -182,7 +190,7 @@ function f:PLAYER_LOGIN()
 				if XTH_DB.showQuestObj and checkPlayerQuest() then
 					--do nothing
 					return
-				end				
+				end
 				--otherwise hide it
 				if not auraSwitch or not XTH_DB.showQuestObj then
 					if not IsShiftKeyDown() then
