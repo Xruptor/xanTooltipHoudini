@@ -1,7 +1,7 @@
 --trigger quest scans
 local triggers = {
 	["QUEST_COMPLETE"] = true,
-	["UNIT_QUEST_LOG_UPDATE"] = true,
+	["UNIT_QUEST_LOG_CHANGED"] = true,
 	["QUEST_WATCH_UPDATE"] = true,
 	["QUEST_FINISHED"] = true,
 	["QUEST_LOG_UPDATE"] = true,
@@ -231,7 +231,7 @@ function f:PLAYER_LOGIN()
 
 	--activate triggers
 	self:RegisterEvent("QUEST_COMPLETE")
-	self:RegisterEvent("UNIT_QUEST_LOG_UPDATE")
+	self:RegisterEvent("UNIT_QUEST_LOG_CHANGED")
 	self:RegisterEvent("QUEST_WATCH_UPDATE")
 	self:RegisterEvent("QUEST_FINISHED")
 	self:RegisterEvent("QUEST_LOG_UPDATE")
