@@ -67,36 +67,15 @@ local function checkPlayerQuest()
 end
 
 function f:doQuestTitleGrab()
-	--we have to expand and then collaspe headers because GetQuestLogTitle won't return anything if it's closed
-	local saved_position = GetQuestLogSelection()
-	
-	for i=1,GetNumQuestLogEntries() do
-		local _,_,_,_,_,isCollapsed,isComplete = GetQuestLogTitle(i)
-		
-		if isCollapsed then
-			local count = GetNumQuestLogEntries()
 
-			ExpandQuestHeader(i)
-			count = GetNumQuestLogEntries() - count
-			
-			for j=i+1,i+count do
-				local questTitle, _, _, _, isHeader = GetQuestLogTitle(j)
-				--store the player quest
-				if questTitle and not isHeader then
-					playerQuests[questTitle] = questTitle
-				end
-			end
-			
-			CollapseQuestHeader(i)
-		else
-			local questTitle, _, _, _, isHeader = GetQuestLogTitle(i);
-			if questTitle and not isHeader then
-				playerQuests[questTitle] = questTitle
-			end
+	for i=1,GetNumQuestLogEntries() do
+		local questTitle, _, _, _, isHeader = GetQuestLogTitle(i)
+		
+		if questTitle and not isHeader then
+			playerQuests[questTitle] = questTitle
 		end
 	end
-	SelectQuestLogEntry(saved_position)
-	
+
 	--reset
 	lastTooltipTarget = ""
 end
