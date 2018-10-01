@@ -1,3 +1,11 @@
+local ADDON_NAME, addon = ...
+if not _G[ADDON_NAME] then _G[ADDON_NAME] = addon end
+
+addon.addonFrame = CreateFrame("frame","xanTooltipHoudini_frame",UIParent)
+local f = addon.addonFrame
+
+local L = LibStub("AceLocale-3.0"):GetLocale("xanTooltipHoudini")
+
 --trigger quest scans
 local triggers = {
 	["QUEST_COMPLETE"] = true,
@@ -16,7 +24,6 @@ local ignoreFrames = {
 	["MinimapCluster"] = true,
 }
 
-local f = CreateFrame("frame","xanTooltipHoudini_frame",UIParent)
 f:SetScript("OnEvent", function(self, event, ...) 
 	if self[event] then 
 		return self[event](self, event, ...)
@@ -73,20 +80,17 @@ function f:InCombatLockdown()
 end
 
 function f:CheckTooltipStatus(tooltip, unit)
+	if not tooltip then return end
 	if not f:InCombatLockdown() then return end
 	if not XTH_DB then return end
 	
-	local name = tooltip:GetName() and string.lower(tooltip:GetName()) or ""
-
 	--this is for the special buffs/debuffs icons above the nameplates, units are nameplate1, nameplate2, etc...
 	if unit and string.find(unit, "nameplate") then
 		tooltip:Hide()
 		return
-	elseif tooltip == NamePlateTooltip or string.find(name, "nameplate") then
-		--we really don't want to do anything else with nameplate
-		return
 	end
-	
+	if tooltip == NamePlateTooltip then return end  --we really don't want to do anything else with nameplate
+
 	local owner = tooltip:GetOwner()
 	local ownerName = owner and owner:GetParent() and owner:GetParent():GetName()
 
@@ -116,30 +120,18 @@ function f:PLAYER_LOGIN()
 		local a,b,c = strfind(msg, "(%S+)") --contiguous string of non-space characters
 		
 		if a then
-			if c and c:lower() == "auras" then
-				if XTH_DB.showAuras then
-					XTH_DB.showAuras = false
-					DEFAULT_CHAT_FRAME:AddMessage("xanTooltipHoudini: Aura (Buff/Debuff) toolips are now [|cFF99CC33OFF|r]")
-				else
-					XTH_DB.showAuras = true
-					DEFAULT_CHAT_FRAME:AddMessage("xanTooltipHoudini: Aura (Buff/Debuff) toolips are now [|cFF99CC33ON|r]")
-				end
+			if c and c:lower() == L.SlashAuras then
+				addon.aboutPanel.btnAuras.func()
 				return true
-			elseif c and c:lower() == "quest" then
-				if XTH_DB.showQuestObj then
-					XTH_DB.showQuestObj = false
-					DEFAULT_CHAT_FRAME:AddMessage("xanTooltipHoudini: Quest toolips are now [|cFF99CC33OFF|r]")
-				else
-					XTH_DB.showQuestObj = true
-					DEFAULT_CHAT_FRAME:AddMessage("xanTooltipHoudini: Quest toolips are now [|cFF99CC33ON|r]")
-				end
+			elseif c and c:lower() == L.SlashQuest then
+				addon.aboutPanel.btnQuest.func()
 				return true
 			end
 		end
 	
 		DEFAULT_CHAT_FRAME:AddMessage("xanTooltipHoudini")
-		DEFAULT_CHAT_FRAME:AddMessage("/xth auras - toggles Aura (Buff/Debuff) tooltips (ON/OFF)")
-		DEFAULT_CHAT_FRAME:AddMessage("/xth quest - toggles Quest objective tooltips (ON/OFF)")
+		DEFAULT_CHAT_FRAME:AddMessage("/xth "..L.SlashAuras.." - "..L.SlashAurasInfo)
+		DEFAULT_CHAT_FRAME:AddMessage("/xth "..L.SlashQuest.." - "..L.SlashQuestInfo)
 	end
 
 	-------
@@ -172,14 +164,6 @@ function f:PLAYER_LOGIN()
 	-------
 	
 	--NamePlateTooltip that shows above nameplate with the buff/debuffs
-	NamePlateTooltip:HookScript("OnShow", function(objTooltip)
-		f:CheckTooltipStatus(objTooltip)
-	end)
-	
-	NamePlateTooltip:HookScript("OnUpdate", function(objTooltip, elapsed)
-		f:CheckTooltipStatus(objTooltip)
-	end)
-	
 	--check if it's one of those new small buff icons that show ontop of the target mob nameplate
 	hooksecurefunc(NamePlateTooltip,"SetUnitAura",function(objTooltip, unit, index, filter)
 		f:CheckTooltipStatus(objTooltip, unit)

@@ -2,8 +2,16 @@
 ## Title: xanTooltipHoudini
 ## Notes: Hides the game tooltip while in combat.
 ## Author: Xruptor
-## Version: 2.7
+## Version: 2.8
+## X-Curse-Project-ID: 28601
+## X-WoWI-ID: 19112
 ## OptionalDeps: tekDebug
 ## SavedVariables: XTH_DB
 
+libs\LibStub\LibStub.lua
+libs\AceLocale-3.0\AceLocale-3.0.xml
+
+locale\enUS.lua
+
 xanTooltipHoudini.lua
+config.lua
