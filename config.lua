@@ -8,15 +8,11 @@ configEvent:SetScript("OnEvent", function(self, event, ...) if self[event] then 
 local L = LibStub("AceLocale-3.0"):GetLocale("xanTooltipHoudini")
 local chkBoxIndex = 1
 
-function createCheckbutton(parentFrame, displayText, dbObjectValue)
+function createCheckbutton(parentFrame, displayText)
 	chkBoxIndex = chkBoxIndex + 1
 	
 	local checkbutton = CreateFrame("CheckButton", ADDON_NAME.."_config_chkbtn_" .. chkBoxIndex, parentFrame, "ChatConfigCheckButtonTemplate")
 	getglobal(checkbutton:GetName() .. 'Text'):SetText(" "..displayText)
-	
-	checkbutton:SetScript("OnShow", function()
-			checkbutton:SetChecked(dbObjectValue)
-	end)
 	
 	return checkbutton
 end
@@ -90,7 +86,8 @@ function configEvent:PLAYER_LOGIN()
 	
 	addon.aboutPanel = LoadAboutFrame()
 	
-	addon.aboutPanel.btnAuras = createCheckbutton(addon.aboutPanel, L.SlashAurasInfo, XTH_DB.showAuras)
+	addon.aboutPanel.btnAuras = createCheckbutton(addon.aboutPanel, L.SlashAurasInfo)
+	addon.aboutPanel.btnAuras:SetScript("OnShow", function() addon.aboutPanel.btnAuras:SetChecked(XTH_DB.showAuras) end)
 	addon.aboutPanel.btnAuras.func = function()
 		local value = addon.aboutPanel.btnAuras:GetChecked()
 		
@@ -102,12 +99,12 @@ function configEvent:PLAYER_LOGIN()
 			DEFAULT_CHAT_FRAME:AddMessage(L.SlashAurasOn)
 		end
 		
-		StaticPopup_Show("XANCHAT_APPLYCHANGES")
 	end
 	addon.aboutPanel.btnAuras:SetScript("OnClick", addon.aboutPanel.btnAuras.func)
 	addConfigEntry(addon.aboutPanel.btnAuras)
 
-	addon.aboutPanel.btnQuest = createCheckbutton(addon.aboutPanel, L.SlashQuestInfo, XTH_DB.showQuestObj)
+	addon.aboutPanel.btnQuest = createCheckbutton(addon.aboutPanel, L.SlashQuestInfo)
+	addon.aboutPanel.btnQuest:SetScript("OnShow", function() addon.aboutPanel.btnQuest:SetChecked(XTH_DB.showQuestObj) end)
 	addon.aboutPanel.btnQuest.func = function()
 		local value = addon.aboutPanel.btnQuest:GetChecked()
 		
@@ -119,7 +116,6 @@ function configEvent:PLAYER_LOGIN()
 			DEFAULT_CHAT_FRAME:AddMessage(L.SlashQuestOn)
 		end
 		
-		StaticPopup_Show("XANCHAT_APPLYCHANGES")
 	end
 	addon.aboutPanel.btnQuest:SetScript("OnClick", addon.aboutPanel.btnQuest.func)
 	addConfigEntry(addon.aboutPanel.btnQuest)
