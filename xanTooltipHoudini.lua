@@ -84,6 +84,11 @@ function f:CheckTooltipStatus(tooltip, unit)
 	if not f:InCombatLockdown() then return end
 	if not XTH_DB then return end
 	
+	--there are lots of taints involved with GameTooltip and NameplateTooltip since 7.2
+	--https://us.battle.net/forums/en/wow/topic/20759156905
+	--https://eu.battle.net/forums/en/wow/topic/17620312302
+	if not CanAccessObject(tooltip) then return end
+	
 	--this is for the special buffs/debuffs icons above the nameplates, units are nameplate1, nameplate2, etc...
 	if unit and string.find(unit, "nameplate") then
 		tooltip:Hide()

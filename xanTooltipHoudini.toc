@@ -2,7 +2,7 @@
 ## Title: xanTooltipHoudini
 ## Notes: Hides the game tooltip while in combat.
 ## Author: Xruptor
-## Version: 2.8
+## Version: 2.9
 ## X-Curse-Project-ID: 28601
 ## X-WoWI-ID: 19112
 ## OptionalDeps: tekDebug
