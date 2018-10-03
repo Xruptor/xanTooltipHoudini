@@ -1,5 +1,6 @@
+local ADDON_NAME, addon = ...
 
-local L = LibStub("AceLocale-3.0"):NewLocale("xanTooltipHoudini", "enUS", true)
+local L = LibStub("AceLocale-3.0"):NewLocale(ADDON_NAME, "enUS", true)
 if not L then return end
 
 --for non-english fonts

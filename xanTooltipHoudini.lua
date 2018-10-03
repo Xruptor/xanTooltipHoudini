@@ -1,10 +1,10 @@
 local ADDON_NAME, addon = ...
-if not _G[ADDON_NAME] then _G[ADDON_NAME] = addon end
+if not _G[ADDON_NAME] then
+	_G[ADDON_NAME] = CreateFrame("Frame", ADDON_NAME, UIParent)
+end
+addon = _G[ADDON_NAME]
 
-addon.addonFrame = CreateFrame("frame","xanTooltipHoudini_frame",UIParent)
-local f = addon.addonFrame
-
-local L = LibStub("AceLocale-3.0"):GetLocale("xanTooltipHoudini")
+local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 --trigger quest scans
 local triggers = {
@@ -24,7 +24,7 @@ local ignoreFrames = {
 	["MinimapCluster"] = true,
 }
 
-f:SetScript("OnEvent", function(self, event, ...) 
+addon:SetScript("OnEvent", function(self, event, ...) 
 	if self[event] then 
 		return self[event](self, event, ...)
 	elseif triggers[event] and self["doQuestTitleGrab"] then
@@ -37,7 +37,7 @@ for i=1, NUM_GROUP_LOOT_FRAMES do
 	ignoreFrames["GroupLootFrame" .. i] = true
 end
 
-local debugf = tekDebug and tekDebug:GetFrame("xanTooltipHoudini")
+local debugf = tekDebug and tekDebug:GetFrame(ADDON_NAME)
 local function Debug(...)
     if debugf then debugf:AddMessage(string.join(", ", tostringall(...))) end
 end
@@ -64,7 +64,7 @@ local function checkPlayerQuest()
 	return false
 end
 
-function f:doQuestTitleGrab()
+function addon:doQuestTitleGrab()
 	playerQuests = {}
 	for i=1,GetNumQuestLogEntries() do
 		local questTitle, _, _, _, isHeader = GetQuestLogTitle(i)
@@ -75,13 +75,13 @@ function f:doQuestTitleGrab()
 	end
 end
 
-function f:InCombatLockdown()
+function addon:InCombatLockdown()
 	return InCombatLockdown() or UnitAffectingCombat("player")
 end
 
-function f:CheckTooltipStatus(tooltip, unit)
+function addon:CheckTooltipStatus(tooltip, unit)
 	if not tooltip then return end
-	if not f:InCombatLockdown() then return end
+	if not addon:InCombatLockdown() then return end
 	if not XTH_DB then return end
 	
 	--there are lots of taints involved with GameTooltip and NameplateTooltip since 7.2
@@ -112,7 +112,7 @@ function f:CheckTooltipStatus(tooltip, unit)
 	end
 end
 
-function f:PLAYER_LOGIN()
+function addon:PLAYER_LOGIN()
 
 	--do DB stuff
 	if not XTH_DB then XTH_DB = {} end
@@ -126,15 +126,15 @@ function f:PLAYER_LOGIN()
 		
 		if a then
 			if c and c:lower() == L.SlashAuras then
-				addon.aboutPanel.btnAuras.func()
+				addon.aboutPanel.btnAuras.func(true)
 				return true
 			elseif c and c:lower() == L.SlashQuest then
-				addon.aboutPanel.btnQuest.func()
+				addon.aboutPanel.btnQuest.func(true)
 				return true
 			end
 		end
 	
-		DEFAULT_CHAT_FRAME:AddMessage("xanTooltipHoudini")
+		DEFAULT_CHAT_FRAME:AddMessage(ADDON_NAME, 64/255, 224/255, 208/255)
 		DEFAULT_CHAT_FRAME:AddMessage("/xth "..L.SlashAuras.." - "..L.SlashAurasInfo)
 		DEFAULT_CHAT_FRAME:AddMessage("/xth "..L.SlashQuest.." - "..L.SlashQuestInfo)
 	end
@@ -144,17 +144,17 @@ function f:PLAYER_LOGIN()
 	-------
 	
 	GameTooltip:HookScript("OnShow", function(objTooltip)
-		f:CheckTooltipStatus(objTooltip)
+		addon:CheckTooltipStatus(objTooltip)
 	end)
 	
 	GameTooltip:HookScript("OnUpdate", function(objTooltip, elapsed)
-		f:CheckTooltipStatus(objTooltip)
+		addon:CheckTooltipStatus(objTooltip)
 	end)
 	
 	--check if it's one of those new small buff icons that show ontop of the target mob nameplate
 	hooksecurefunc(GameTooltip,"SetUnitAura",function(objTooltip, unit, index, filter)
 		processAuraTooltip(objTooltip, unit, index, filter)
-		f:CheckTooltipStatus(objTooltip, unit)
+		addon:CheckTooltipStatus(objTooltip, unit)
 	end)
 
 	GameTooltip:HookScript("OnHide", function(self)
@@ -171,7 +171,7 @@ function f:PLAYER_LOGIN()
 	--NamePlateTooltip that shows above nameplate with the buff/debuffs
 	--check if it's one of those new small buff icons that show ontop of the target mob nameplate
 	hooksecurefunc(NamePlateTooltip,"SetUnitAura",function(objTooltip, unit, index, filter)
-		f:CheckTooltipStatus(objTooltip, unit)
+		addon:CheckTooltipStatus(objTooltip, unit)
 	end)
 	
 	--activate triggers
@@ -184,8 +184,11 @@ function f:PLAYER_LOGIN()
 	--call quest scan just in case
 	self:doQuestTitleGrab()
 	
+	local ver = GetAddOnMetadata(ADDON_NAME,"Version") or '1.0'
+	DEFAULT_CHAT_FRAME:AddMessage(string.format("|cFF99CC33%s|r [v|cFF20ff20%s|r] loaded:   /xth", ADDON_NAME, ver or "1.0"))
+	
 	self:UnregisterEvent("PLAYER_LOGIN")
 	self.PLAYER_LOGIN = nil
 end
 
-if IsLoggedIn() then f:PLAYER_LOGIN() else f:RegisterEvent("PLAYER_LOGIN") end
+if IsLoggedIn() then addon:PLAYER_LOGIN() else addon:RegisterEvent("PLAYER_LOGIN") end
