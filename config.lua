@@ -11,14 +11,14 @@ configEvent:SetScript("OnEvent", function(self, event, ...) if self[event] then 
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 local lastObject
-local function addConfigEntry(objEntry)
+local function addConfigEntry(objEntry, extraAdjust)
 	
 	objEntry:ClearAllPoints()
 	
 	if not lastObject then
 		objEntry:SetPoint("TOPLEFT", 20, -150)
 	else
-		objEntry:SetPoint("LEFT", lastObject, "BOTTOMLEFT", 0, -35)
+		objEntry:SetPoint("LEFT", lastObject, "BOTTOMLEFT", 0, -30 + (extraAdjust or 0))
 	end
 	
 	lastObject = objEntry
@@ -68,7 +68,7 @@ local function createSlider(parentFrame, displayText, minVal, maxVal)
 	slider:SetBackdrop(SliderBackdrop)
 
 	local label = slider:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	label:SetPoint("CENTER", slider, "CENTER", 0, 12)
+	label:SetPoint("CENTER", slider, "CENTER", 0, 16)
 	label:SetJustifyH("CENTER")
 	label:SetHeight(15)
 	label:SetText(displayText)
@@ -143,11 +143,11 @@ function configEvent:PLAYER_LOGIN()
 	
 	addon.aboutPanel = LoadAboutFrame()
 	
-	addon.aboutPanel.btnAuras = createCheckbutton(addon.aboutPanel, L.SlashAurasInfo)
-	addon.aboutPanel.btnAuras:SetScript("OnShow", function() addon.aboutPanel.btnAuras:SetChecked(XTH_DB.showAuras) end)
-	addon.aboutPanel.btnAuras.func = function(slashSwitch)
+	local btnAuras = createCheckbutton(addon.aboutPanel, L.SlashAurasInfo)
+	btnAuras:SetScript("OnShow", function() btnAuras:SetChecked(XTH_DB.showAuras) end)
+	btnAuras.func = function(slashSwitch)
 		local value = XTH_DB.showAuras
-		if not slashSwitch then value = addon.aboutPanel.btnAuras:GetChecked() end
+		if not slashSwitch then value = btnAuras:GetChecked() end
 		
 		if value then
 			XTH_DB.showAuras = false
@@ -158,14 +158,16 @@ function configEvent:PLAYER_LOGIN()
 		end
 		
 	end
-	addon.aboutPanel.btnAuras:SetScript("OnClick", addon.aboutPanel.btnAuras.func)
-	addConfigEntry(addon.aboutPanel.btnAuras)
+	btnAuras:SetScript("OnClick", btnAuras.func)
 	
-	addon.aboutPanel.btnQuest = createCheckbutton(addon.aboutPanel, L.SlashQuestInfo)
-	addon.aboutPanel.btnQuest:SetScript("OnShow", function() addon.aboutPanel.btnQuest:SetChecked(XTH_DB.showQuestObj) end)
-	addon.aboutPanel.btnQuest.func = function(slashSwitch)
+	addConfigEntry(btnAuras)
+	addon.aboutPanel.btnAuras = btnAuras
+	
+	local btnQuest = createCheckbutton(addon.aboutPanel, L.SlashQuestInfo)
+	btnQuest:SetScript("OnShow", function() btnQuest:SetChecked(XTH_DB.showQuestObj) end)
+	btnQuest.func = function(slashSwitch)
 		local value = XTH_DB.showQuestObj
-		if not slashSwitch then value = addon.aboutPanel.btnQuest:GetChecked() end
+		if not slashSwitch then value = btnQuest:GetChecked() end
 		
 		if value then
 			XTH_DB.showQuestObj = false
@@ -176,8 +178,10 @@ function configEvent:PLAYER_LOGIN()
 		end
 		
 	end
-	addon.aboutPanel.btnQuest:SetScript("OnClick", addon.aboutPanel.btnQuest.func)
-	addConfigEntry(addon.aboutPanel.btnQuest)
+	btnQuest:SetScript("OnClick", btnQuest.func)
+	
+	addConfigEntry(btnQuest)
+	addon.aboutPanel.btnQuest = btnQuest
 
 	configEvent:UnregisterEvent("PLAYER_LOGIN")
 end
