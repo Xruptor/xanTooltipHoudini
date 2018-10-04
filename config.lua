@@ -11,14 +11,14 @@ configEvent:SetScript("OnEvent", function(self, event, ...) if self[event] then 
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 
 local lastObject
-local function addConfigEntry(objEntry, extraAdjust)
+local function addConfigEntry(objEntry, adjustX, adjustY)
 	
 	objEntry:ClearAllPoints()
 	
 	if not lastObject then
 		objEntry:SetPoint("TOPLEFT", 20, -150)
 	else
-		objEntry:SetPoint("LEFT", lastObject, "BOTTOMLEFT", 0, -30 + (extraAdjust or 0))
+		objEntry:SetPoint("LEFT", lastObject, "BOTTOMLEFT", adjustX or 0, adjustY or -30)
 	end
 	
 	lastObject = objEntry
@@ -160,7 +160,7 @@ function configEvent:PLAYER_LOGIN()
 	end
 	btnAuras:SetScript("OnClick", btnAuras.func)
 	
-	addConfigEntry(btnAuras)
+	addConfigEntry(btnAuras, 0, -20)
 	addon.aboutPanel.btnAuras = btnAuras
 	
 	local btnQuest = createCheckbutton(addon.aboutPanel, L.SlashQuestInfo)
@@ -180,7 +180,7 @@ function configEvent:PLAYER_LOGIN()
 	end
 	btnQuest:SetScript("OnClick", btnQuest.func)
 	
-	addConfigEntry(btnQuest)
+	addConfigEntry(btnQuest, 0, -20)
 	addon.aboutPanel.btnQuest = btnQuest
 
 	configEvent:UnregisterEvent("PLAYER_LOGIN")
