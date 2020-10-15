@@ -1,6 +1,6 @@
 local ADDON_NAME, addon = ...
 if not _G[ADDON_NAME] then
-	_G[ADDON_NAME] = CreateFrame("Frame", ADDON_NAME, UIParent)
+	_G[ADDON_NAME] = CreateFrame("Frame", ADDON_NAME, UIParent, BackdropTemplateMixin and "BackdropTemplate")
 end
 addon = _G[ADDON_NAME]
 
@@ -42,6 +42,12 @@ local function Debug(...)
     if debugf then debugf:AddMessage(string.join(", ", tostringall(...))) end
 end
 
+local IsRetail = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
+
+local function CanAccessObject(obj)
+	return issecure() or not obj:IsForbidden();
+end
+
 ----------------------
 --      Enable      --
 ----------------------
@@ -66,13 +72,26 @@ end
 
 function addon:doQuestTitleGrab()
 	playerQuests = {}
-	for i=1,GetNumQuestLogEntries() do
-		local questTitle, _, _, _, isHeader = GetQuestLogTitle(i)
-		
-		if questTitle and not isHeader then
-			playerQuests[questTitle] = questTitle
+
+	if IsRetail then
+		for i=1, C_QuestLog.GetNumQuestLogEntries() do
+			local questInfo = C_QuestLog.GetInfo(i)
+			
+			if questInfo.title and not questInfo.isHeader then
+				playerQuests[questInfo.title] = questInfo.title
+			end
+		end
+	
+	else
+		for i=1, GetNumQuestLogEntries() do
+			local questTitle, _, _, _, isHeader = GetQuestLogTitle(i)
+			
+			if questTitle and not isHeader then
+				playerQuests[questTitle] = questTitle
+			end
 		end
 	end
+	
 end
 
 function addon:InCombatLockdown()
