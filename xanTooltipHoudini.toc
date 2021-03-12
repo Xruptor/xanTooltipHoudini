@@ -1,13 +1,13 @@
 #@retail@
-## Interface: 90001
+## Interface: 90005
 #@end-retail@
 #@non-retail@
-# ## Interface: 11305
+# ## Interface: 11306
 #@end-non-retail@
 ## Title: xanTooltipHoudini
 ## Notes: Hides the game tooltip while in combat.
 ## Author: Xruptor
-## Version: 3.7
+## Version: 3.8
 ## X-Curse-Project-ID: 28601
 ## X-WoWI-ID: 19112
 ## OptionalDeps: tekDebug
