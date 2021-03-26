@@ -146,7 +146,7 @@ function configFrame:EnableConfig()
 	btnAuras:SetScript("OnShow", function() btnAuras:SetChecked(XTH_DB.showAuras) end)
 	btnAuras.func = function(slashSwitch)
 		local value = XTH_DB.showAuras
-		if not slashSwitch then value = btnAuras:GetChecked() end
+		if not slashSwitch then value = XTH_DB.showAuras end
 		
 		if value then
 			XTH_DB.showAuras = false
@@ -166,7 +166,7 @@ function configFrame:EnableConfig()
 	btnQuest:SetScript("OnShow", function() btnQuest:SetChecked(XTH_DB.showQuestObj) end)
 	btnQuest.func = function(slashSwitch)
 		local value = XTH_DB.showQuestObj
-		if not slashSwitch then value = btnQuest:GetChecked() end
+		if not slashSwitch then value = XTH_DB.showQuestObj end
 		
 		if value then
 			XTH_DB.showQuestObj = false
