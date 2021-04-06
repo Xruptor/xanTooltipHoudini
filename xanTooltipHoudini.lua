@@ -5,6 +5,7 @@ end
 addon = _G[ADDON_NAME]
 
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+local IsRetail = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
 
 --trigger quest scans
 local triggers = {
@@ -58,8 +59,6 @@ local function Debug(...)
     if debugf then debugf:AddMessage(string.join(", ", tostringall(...))) end
 end
 
-local IsRetail = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
-
 local function CanAccessObject(obj)
 	return issecure() or not obj:IsForbidden();
 end
@@ -110,13 +109,29 @@ function addon:doQuestTitleGrab()
 	
 end
 
-function addon:InCombatLockdown()
-	return InCombatLockdown() or UnitAffectingCombat("player")
+local function IsInBG()
+	if (GetNumBattlefieldScores() > 0) then
+		return true
+	end
+	return false
+end
+
+local function IsInArena()
+	if not IsRetail then return false end
+	local a,b = IsActiveBattlefieldArena()
+	if not a then
+		return false
+	end
+	return true
+end
+
+local function CheckCombatStatus()
+	return IsInBG() or IsInArena() or InCombatLockdown() or UnitAffectingCombat("player") or (IsRetail and C_PetBattles.IsInBattle())
 end
 
 function addon:CheckTooltipStatus(tooltip, unit)
 	if not tooltip then return end
-	if not addon:InCombatLockdown() then return end
+	if not CheckCombatStatus() then return end
 	if not XTH_DB then return end
 	
 	--there are lots of taints involved with GameTooltip and NameplateTooltip since 7.2
