@@ -50,7 +50,7 @@ addon:SetScript("OnEvent", function(self, event, ...)
 end)
 
 --add the loot frames
-for i=1, NUM_GROUP_LOOT_FRAMES do
+for i=1, NUM_GROUP_LOOT_FRAMES or 4 do
 	ignoreFrames["GroupLootFrame" .. i] = true
 end
 
