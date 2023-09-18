@@ -1,11 +1,12 @@
-## Interface: 100100
-## Interface-Retail: 100100
-## Interface-Classic: 11403
-## Interface-Wrath: 30401
+## Interface: 100107
+## Interface-Retail: 100107
+## Interface-Classic: 11404
+## Interface-Wrath: 30402
 ## Title: xanTooltipHoudini
 ## Notes: Hides the game tooltip while in combat.
 ## Author: Xruptor
-## Version: 4.9
+## Version: 5.0
+## IconTexture: 132331
 ## X-Curse-Project-ID: 28601
 ## X-WoWI-ID: 19112
 ## X-Wago-ID: JZKbkyG1
