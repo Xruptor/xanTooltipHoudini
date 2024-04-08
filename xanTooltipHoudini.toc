@@ -8,7 +8,7 @@
 ## Notes-zhCN: 在战斗中启用/隐藏鼠标提示。
 ## Notes-zhTW: 在戰鬥中啓用/隱藏工具提示。
 ## Author: Xruptor
-## Version: 5.2
+## Version: 5.3
 ## IconTexture: 132331
 ## X-Curse-Project-ID: 28601
 ## X-WoWI-ID: 19112
