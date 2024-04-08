@@ -1,6 +1,6 @@
 local ADDON_NAME, addon = ...
 
-local L = LibStub("AceLocale-3.0"):NewLocale(ADDON_NAME, "zhTW", true)
+local L = LibStub("AceLocale-3.0"):NewLocale(ADDON_NAME, "zhTW")
 if not L then return end
 
 --special thanks to BNS333 from CurseForge
