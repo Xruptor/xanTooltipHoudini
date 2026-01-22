@@ -6,6 +6,8 @@ addon = _G[ADDON_NAME]
 
 local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
 local IsRetail = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
+local GetNumQuestLogEntries = _G.GetNumQuestLogEntries
+local GetQuestLogTitle = _G.GetQuestLogTitle
 
 --trigger quest scans
 local triggers = {
@@ -108,9 +110,7 @@ local function checkPlayerQuest(tooltip)
 		if ttText and CanAccessObject(ttText) then
 			local text = ttText:GetText()
 			if text then
-				local ok, hasQuest = pcall(function()
-					return playerQuests[text] ~= nil
-				end)
+				local ok, hasQuest = pcall(rawget, playerQuests, text)
 				if ok and hasQuest then return true end
 			end
 		end
@@ -122,20 +122,24 @@ function addon:doQuestTitleGrab()
 	playerQuests = {}
 
 	if IsRetail then
+		if not (C_QuestLog and C_QuestLog.GetNumQuestLogEntries and C_QuestLog.GetInfo) then return end
+
 		for i=1, C_QuestLog.GetNumQuestLogEntries() do
 			local questInfo = C_QuestLog.GetInfo(i)
 			
-			if questInfo.title and not questInfo.isHeader then
-				playerQuests[questInfo.title] = questInfo.title
+			if questInfo and questInfo.title and not questInfo.isHeader then
+				playerQuests[questInfo.title] = true
 			end
 		end
 	
 	else
+		if type(GetNumQuestLogEntries) ~= "function" or type(GetQuestLogTitle) ~= "function" then return end
+
 		for i=1, GetNumQuestLogEntries() do
 			local questTitle, _, _, _, isHeader = GetQuestLogTitle(i)
 			
 			if questTitle and not isHeader then
-				playerQuests[questTitle] = questTitle
+				playerQuests[questTitle] = true
 			end
 		end
 	end
@@ -151,7 +155,7 @@ end
 
 local function IsInArena()
 	if not IsRetail then return false end
-	local a,b = IsActiveBattlefieldArena()
+	local a = IsActiveBattlefieldArena()
 	if not a then
 		return false
 	end
@@ -159,7 +163,9 @@ local function IsInArena()
 end
 
 local function CheckCombatStatus()
-	return IsInBG() or IsInArena() or InCombatLockdown() or UnitAffectingCombat("player") or (IsRetail and C_PetBattles.IsInBattle())
+	if InCombatLockdown() or UnitAffectingCombat("player") then return true end
+	if IsRetail and C_PetBattles.IsInBattle() then return true end
+	return IsInBG() or IsInArena()
 end
 
 function addon:CheckTooltipStatus(tooltip, unit)
@@ -173,7 +179,7 @@ function addon:CheckTooltipStatus(tooltip, unit)
 	if not CanAccessObject(tooltip) then return end
 	
 	--this is for the special buffs/debuffs icons above the nameplates, units are nameplate1, nameplate2, etc...
-	if unit and string.find(unit, "nameplate") then
+	if unit and unit:sub(1, 9) == "nameplate" then
 		tooltip:Hide()
 		return
 	end
@@ -202,6 +208,9 @@ function addon:EnableAddon()
 	if XTH_DB.showAuras == nil then XTH_DB.showAuras = true end
 	if XTH_DB.showQuestObj == nil then XTH_DB.showQuestObj = true end
 
+	local tooltipUpdateThrottle = 0
+	local TOOLTIP_UPDATE_INTERVAL = 0.10
+
 	SLASH_XANTOOLTIPHOUDINI1 = "/xth"
 	SlashCmdList["XANTOOLTIPHOUDINI"] = function(msg)
 	
@@ -227,10 +236,14 @@ function addon:EnableAddon()
 	-------
 	
 	GameTooltip:HookScript("OnShow", function(objTooltip)
+		tooltipUpdateThrottle = 0
 		addon:CheckTooltipStatus(objTooltip)
 	end)
 	
 	GameTooltip:HookScript("OnUpdate", function(objTooltip, elapsed)
+		tooltipUpdateThrottle = tooltipUpdateThrottle + (elapsed or 0)
+		if tooltipUpdateThrottle < TOOLTIP_UPDATE_INTERVAL then return end
+		tooltipUpdateThrottle = 0
 		addon:CheckTooltipStatus(objTooltip)
 	end)
 	
@@ -241,6 +254,7 @@ function addon:EnableAddon()
 	end)
 
 	GameTooltip:HookScript("OnHide", function(self)
+		tooltipUpdateThrottle = 0
 		auraSwitch = false
 	end)
 	
