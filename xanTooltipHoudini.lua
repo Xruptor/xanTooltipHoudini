@@ -60,7 +60,29 @@ local function Debug(...)
 end
 
 local function CanAccessObject(obj)
-	return issecure() or not obj:IsForbidden();
+	if issecure() then return true end
+	if not obj then return false end
+	if obj.IsForbidden then
+		return not obj:IsForbidden()
+	end
+	return true
+end
+
+local function SafeHookTooltipMethod(target, methodName, hookFunc)
+	if not target or type(methodName) ~= "string" or type(hookFunc) ~= "function" then return false end
+
+	if type(target) == "string" then
+		target = _G[target]
+		if not target then return false end
+	end
+
+	local ok, method = pcall(function()
+		return target[methodName]
+	end)
+	if not ok or type(method) ~= "function" then return false end
+
+	ok = pcall(hooksecurefunc, target, methodName, hookFunc)
+	return ok
 end
 
 ----------------------
@@ -75,11 +97,22 @@ local function processAuraTooltip(self, unitid, index, filter)
 	auraSwitch = false
 end
 
-local function checkPlayerQuest()
-	for i=1,GameTooltip:NumLines() do
-		local ttText = getglobal("GameTooltipTextLeft" .. i)
-		if ttText and ttText:GetText() and playerQuests[ttText:GetText()] then
-			return true
+local function checkPlayerQuest(tooltip)
+	tooltip = tooltip or GameTooltip
+	if not tooltip or not tooltip.NumLines then return false end
+	local tooltipName = tooltip.GetName and tooltip:GetName()
+	if not tooltipName then return false end
+
+	for i=1, tooltip:NumLines() do
+		local ttText = _G[tooltipName .. "TextLeft" .. i]
+		if ttText and CanAccessObject(ttText) then
+			local text = ttText:GetText()
+			if text then
+				local ok, hasQuest = pcall(function()
+					return playerQuests[text] ~= nil
+				end)
+				if ok and hasQuest then return true end
+			end
 		end
 	end
 	return false
@@ -154,7 +187,7 @@ function addon:CheckTooltipStatus(tooltip, unit)
 		if ownerName and ownerName == "BuffFrame" then return end
 	end
 	
-	if XTH_DB.showQuestObj and checkPlayerQuest() then return end
+	if XTH_DB.showQuestObj and checkPlayerQuest(tooltip) then return end
 	if ownerName and ignoreFrames[ownerName] then return end
 	
 	if not IsShiftKeyDown() then
@@ -202,7 +235,7 @@ function addon:EnableAddon()
 	end)
 	
 	--check if it's one of those new small buff icons that show ontop of the target mob nameplate
-	hooksecurefunc(GameTooltip,"SetUnitAura",function(objTooltip, unit, index, filter)
+	SafeHookTooltipMethod(GameTooltip, "SetUnitAura", function(objTooltip, unit, index, filter)
 		processAuraTooltip(objTooltip, unit, index, filter)
 		addon:CheckTooltipStatus(objTooltip, unit)
 	end)
@@ -211,8 +244,8 @@ function addon:EnableAddon()
 		auraSwitch = false
 	end)
 	
-	hooksecurefunc(GameTooltip, "SetUnitBuff", processAuraTooltip)
-	hooksecurefunc(GameTooltip, "SetUnitDebuff", processAuraTooltip)
+	SafeHookTooltipMethod(GameTooltip, "SetUnitBuff", processAuraTooltip)
+	SafeHookTooltipMethod(GameTooltip, "SetUnitDebuff", processAuraTooltip)
 	
 	-------
 	-------NamePlateTooltip
@@ -220,9 +253,11 @@ function addon:EnableAddon()
 	
 	--NamePlateTooltip that shows above nameplate with the buff/debuffs
 	--check if it's one of those new small buff icons that show ontop of the target mob nameplate
-	hooksecurefunc(NamePlateTooltip,"SetUnitAura",function(objTooltip, unit, index, filter)
-		addon:CheckTooltipStatus(objTooltip, unit)
-	end)
+	if NamePlateTooltip then
+		SafeHookTooltipMethod(NamePlateTooltip, "SetUnitAura", function(objTooltip, unit, index, filter)
+			addon:CheckTooltipStatus(objTooltip, unit)
+		end)
+	end
 	
 	--activate triggers
 	self:RegisterEvent("QUEST_COMPLETE")
