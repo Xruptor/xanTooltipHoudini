@@ -1,105 +1,73 @@
-local ADDON_NAME, addon = ...
-if not _G[ADDON_NAME] then
-	_G[ADDON_NAME] = CreateFrame("Frame", ADDON_NAME, UIParent, BackdropTemplateMixin and "BackdropTemplate")
+local ADDON_NAME, private = ...
+if type(private) ~= "table" then
+	private = {}
 end
-addon = _G[ADDON_NAME]
 
-addon.configFrame = CreateFrame("frame", ADDON_NAME.."_config_eventFrame", UIParent, BackdropTemplateMixin and "BackdropTemplate")
+local addon = _G[ADDON_NAME]
+if not addon then
+	addon = CreateFrame("Frame", ADDON_NAME, UIParent, BackdropTemplateMixin and "BackdropTemplate")
+	_G[ADDON_NAME] = addon
+end
+
+addon.configFrame = CreateFrame("frame", ADDON_NAME .. "_config_eventFrame", UIParent, BackdropTemplateMixin and "BackdropTemplate")
 local configFrame = addon.configFrame
 
-local L = LibStub("AceLocale-3.0"):GetLocale(ADDON_NAME)
+local C_AddOns = _G.C_AddOns
+local L = private.L or {}
 
 local lastObject
 local function addConfigEntry(objEntry, adjustX, adjustY)
-	
 	objEntry:ClearAllPoints()
-	
+
 	if not lastObject then
 		objEntry:SetPoint("TOPLEFT", 20, -150)
 	else
 		objEntry:SetPoint("LEFT", lastObject, "BOTTOMLEFT", adjustX or 0, adjustY or -30)
 	end
-	
+
 	lastObject = objEntry
 end
 
 local chkBoxIndex = 0
 local function createCheckbutton(parentFrame, displayText)
 	chkBoxIndex = chkBoxIndex + 1
-	
-	local checkbutton = CreateFrame("CheckButton", ADDON_NAME.."_config_chkbtn_" .. chkBoxIndex, parentFrame, "ChatConfigCheckButtonTemplate")
-	getglobal(checkbutton:GetName() .. 'Text'):SetText(" "..displayText)
-	
+
+	local checkbutton = CreateFrame("CheckButton", ADDON_NAME .. "_config_chkbtn_" .. chkBoxIndex, parentFrame, "ChatConfigCheckButtonTemplate")
+	_G[checkbutton:GetName() .. "Text"]:SetText(" " .. displayText)
+
 	return checkbutton
 end
 
-local buttonIndex = 0
-local function createButton(parentFrame, displayText)
-	buttonIndex = buttonIndex + 1
-	
-	local button = CreateFrame("Button", ADDON_NAME.."_config_button_" .. buttonIndex, parentFrame, "UIPanelButtonTemplate")
-	button:SetText(displayText)
-	button:SetHeight(30)
-	button:SetWidth(button:GetTextWidth() + 30)
+local function createToggle(panel, label, key, onMsg, offMsg)
+	local checkbutton = createCheckbutton(panel, label)
 
-	return button
-end
+	checkbutton:SetScript("OnShow", function()
+		checkbutton:SetChecked(XTH_DB and XTH_DB[key])
+	end)
 
-local sliderIndex = 0
-local function createSlider(parentFrame, displayText, minVal, maxVal)
-	sliderIndex = sliderIndex + 1
-	
-	local SliderBackdrop  = {
-		bgFile = "Interface\\Buttons\\UI-SliderBar-Background",
-		edgeFile = "Interface\\Buttons\\UI-SliderBar-Border",
-		tile = true, tileSize = 8, edgeSize = 8,
-		insets = { left = 3, right = 3, top = 6, bottom = 6 }
-	}
-	
-	local slider = CreateFrame("Slider", ADDON_NAME.."_config_slider_" .. sliderIndex, parentFrame, BackdropTemplateMixin and "BackdropTemplate")
-	slider:SetOrientation("HORIZONTAL")
-	slider:SetHeight(15)
-	slider:SetWidth(300)
-	slider:SetHitRectInsets(0, 0, -10, 0)
-	slider:SetThumbTexture("Interface\\Buttons\\UI-SliderBar-Button-Horizontal")
-	slider:SetMinMaxValues(minVal or 0, maxVal or 100)
-	slider:SetValue(0)
-	slider:SetBackdrop(SliderBackdrop)
+	checkbutton.Toggle = function()
+		local newValue = addon:ToggleSetting(key, onMsg, offMsg)
+		checkbutton:SetChecked(newValue)
+		return newValue
+	end
 
-	local label = slider:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	label:SetPoint("CENTER", slider, "CENTER", 0, 16)
-	label:SetJustifyH("CENTER")
-	label:SetHeight(15)
-	label:SetText(displayText)
+	checkbutton:SetScript("OnClick", checkbutton.Toggle)
 
-	local lowtext = slider:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	lowtext:SetPoint("TOPLEFT", slider, "BOTTOMLEFT", 2, 3)
-	lowtext:SetText(minVal)
-
-	local hightext = slider:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	hightext:SetPoint("TOPRIGHT", slider, "BOTTOMRIGHT", -2, 3)
-	hightext:SetText(maxVal)
-	
-	local currVal = slider:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-	currVal:SetPoint("TOPRIGHT", slider, "BOTTOMRIGHT", 45, 12)
-	currVal:SetText('(?)')
-	slider.currVal = currVal
-	
-	return slider
+	return checkbutton
 end
 
 local function LoadAboutFrame()
-
 	--Code inspired from tekKonfigAboutPanel
-	local about = CreateFrame("Frame", ADDON_NAME.."AboutPanel", InterfaceOptionsFramePanelContainer, BackdropTemplateMixin and "BackdropTemplate")
+	local parent = InterfaceOptionsFramePanelContainer or UIParent
+	local about = CreateFrame("Frame", ADDON_NAME .. "AboutPanel", parent, BackdropTemplateMixin and "BackdropTemplate")
 	about.name = ADDON_NAME
 	about:Hide()
-	
-    local fields = {"Version", "Author"}
-	local notes = C_AddOns.GetAddOnMetadata(ADDON_NAME, "Notes")
 
-    local title = about:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+	local fields = { "Version", "Author" }
+	local GetAddOnMetadata = (C_AddOns and C_AddOns.GetAddOnMetadata) or _G.GetAddOnMetadata
+	local notes = GetAddOnMetadata and GetAddOnMetadata(ADDON_NAME, "Notes")
 
+	local title = about:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
 	title:SetPoint("TOPLEFT", 16, -16)
 	title:SetText(ADDON_NAME)
 
@@ -113,31 +81,34 @@ local function LoadAboutFrame()
 	subtitle:SetText(notes)
 
 	local anchor
-	for _,field in pairs(fields) do
-		local val = C_AddOns.GetAddOnMetadata(ADDON_NAME, field)
+	for _, field in pairs(fields) do
+		local val = GetAddOnMetadata and GetAddOnMetadata(ADDON_NAME, field)
 		if val then
-			local title = about:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
-			title:SetWidth(75)
-			if not anchor then title:SetPoint("TOPLEFT", subtitle, "BOTTOMLEFT", -2, -8)
-			else title:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -6) end
-			title:SetJustifyH("RIGHT")
-			title:SetText(field:gsub("X%-", ""))
+			local titleText = about:CreateFontString(nil, "ARTWORK", "GameFontNormalSmall")
+			titleText:SetWidth(75)
+			if not anchor then
+				titleText:SetPoint("TOPLEFT", subtitle, "BOTTOMLEFT", -2, -8)
+			else
+				titleText:SetPoint("TOPLEFT", anchor, "BOTTOMLEFT", 0, -6)
+			end
+			titleText:SetJustifyH("RIGHT")
+			titleText:SetText(field:gsub("X%-", ""))
 
 			local detail = about:CreateFontString(nil, "ARTWORK", "GameFontHighlightSmall")
-			detail:SetPoint("LEFT", title, "RIGHT", 4, 0)
+			detail:SetPoint("LEFT", titleText, "RIGHT", 4, 0)
 			detail:SetPoint("RIGHT", -16, 0)
 			detail:SetJustifyH("LEFT")
 			detail:SetText(val)
 
-			anchor = title
+			anchor = titleText
 		end
 	end
-	
+
 	if InterfaceOptions_AddCategory then
 		InterfaceOptions_AddCategory(about)
 	else
-		local category, layout = _G.Settings.RegisterCanvasLayoutCategory(about, about.name);
-		_G.Settings.RegisterAddOnCategory(category);
+		local category, layout = _G.Settings.RegisterCanvasLayoutCategory(about, about.name)
+		_G.Settings.RegisterAddOnCategory(category)
 		addon.settingsCategory = category
 	end
 
@@ -145,46 +116,13 @@ local function LoadAboutFrame()
 end
 
 function configFrame:EnableConfig()
-	
 	addon.aboutPanel = LoadAboutFrame()
-	
-	local btnAuras = createCheckbutton(addon.aboutPanel, L.SlashAurasInfo)
-	btnAuras:SetScript("OnShow", function() btnAuras:SetChecked(XTH_DB.showAuras) end)
-	btnAuras.func = function(slashSwitch)
-		local value = XTH_DB.showAuras
-		if not slashSwitch then value = XTH_DB.showAuras end
-		
-		if value then
-			XTH_DB.showAuras = false
-			DEFAULT_CHAT_FRAME:AddMessage(L.SlashAurasOff)
-		else
-			XTH_DB.showAuras = true
-			DEFAULT_CHAT_FRAME:AddMessage(L.SlashAurasOn)
-		end
-		
-	end
-	btnAuras:SetScript("OnClick", btnAuras.func)
-	
+
+	local btnAuras = createToggle(addon.aboutPanel, L.SlashAurasInfo or "", "showAuras", L.SlashAurasOn, L.SlashAurasOff)
 	addConfigEntry(btnAuras, 0, -20)
 	addon.aboutPanel.btnAuras = btnAuras
-	
-	local btnQuest = createCheckbutton(addon.aboutPanel, L.SlashQuestInfo)
-	btnQuest:SetScript("OnShow", function() btnQuest:SetChecked(XTH_DB.showQuestObj) end)
-	btnQuest.func = function(slashSwitch)
-		local value = XTH_DB.showQuestObj
-		if not slashSwitch then value = XTH_DB.showQuestObj end
-		
-		if value then
-			XTH_DB.showQuestObj = false
-			DEFAULT_CHAT_FRAME:AddMessage(L.SlashQuestOff)
-		else
-			XTH_DB.showQuestObj = true
-			DEFAULT_CHAT_FRAME:AddMessage(L.SlashQuestOn)
-		end
-		
-	end
-	btnQuest:SetScript("OnClick", btnQuest.func)
-	
+
+	local btnQuest = createToggle(addon.aboutPanel, L.SlashQuestInfo or "", "showQuestObj", L.SlashQuestOn, L.SlashQuestOff)
 	addConfigEntry(btnQuest, 0, -20)
 	addon.aboutPanel.btnQuest = btnQuest
 end

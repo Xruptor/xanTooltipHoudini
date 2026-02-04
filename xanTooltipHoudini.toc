@@ -1,10 +1,10 @@
-## Interface: 120000, 110207, 50503, 40402, 38000, 30405, 20504, 11508
+## Interface: 120000, 110207, 50503, 40402, 38000, 30405, 20505, 11508
 ## Title: xanTooltipHoudini
 ## Notes: Hides the game tooltip while in combat.
 ## Notes-zhCN: 在战斗中启用/隐藏鼠标提示。
 ## Notes-zhTW: 在戰鬥中啓用/隱藏工具提示。
 ## Author: Xruptor
-## Version: 5.13
+## Version: 5.14
 ## IconTexture: 132331
 ## X-Curse-Project-ID: 28601
 ## X-WoWI-ID: 19112
@@ -12,10 +12,16 @@
 ## OptionalDeps: tekDebug
 ## SavedVariables: XTH_DB
 
-libs\LibStub\LibStub.lua
-libs\AceLocale-3.0\AceLocale-3.0.xml
-
+locale\locales.lua
 locale\enUS.lua
+locale\deDE.lua
+locale\esES.lua
+locale\esMX.lua
+locale\frFR.lua
+locale\itIT.lua
+locale\koKR.lua
+locale\ptBR.lua
+locale\ruRU.lua
 locale\zhCN.lua
 locale\zhTW.lua
 

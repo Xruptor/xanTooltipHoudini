@@ -1,6 +1,6 @@
-local ADDON_NAME, addon = ...
+local ADDON_NAME, private = ...
 
-local L = LibStub("AceLocale-3.0"):NewLocale(ADDON_NAME, "zhCN")
+local L = private:NewLocale("zhCN")
 if not L then return end
 
 L.SlashAuras = "光环"
