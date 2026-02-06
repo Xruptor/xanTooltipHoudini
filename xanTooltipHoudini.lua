@@ -111,9 +111,11 @@ local function getTooltipLineText(line)
 end
 
 local function getTooltipDataLines(tooltip)
+	if not issecure() then return nil end
 	if not tooltip or not tooltip.GetTooltipData then return nil end
 	local ok, data = pcall(tooltip.GetTooltipData, tooltip)
 	if not ok or not data or not data.lines then return nil end
+	if type(data.lines) ~= "table" then return nil end
 	return data.lines
 end
 
@@ -124,8 +126,8 @@ local function checkPlayerQuest(tooltip)
 
 	local dataLines = getTooltipDataLines(tooltip)
 	if dataLines then
-		for i = 1, #dataLines do
-			local text = getTooltipLineText(dataLines[i])
+		for _, line in ipairs(dataLines) do
+			local text = getTooltipLineText(line)
 			if text then
 				for questTitle in pairs(playerQuests) do
 					if safeStrEq(text, questTitle) then
