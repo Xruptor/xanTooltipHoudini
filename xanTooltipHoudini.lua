@@ -15,6 +15,7 @@ local IsRetail = WOW_PROJECT_ID == WOW_PROJECT_MAINLINE
 local C_AddOns = _G.C_AddOns
 local C_QuestLog = _G.C_QuestLog
 local C_PetBattles = _G.C_PetBattles
+local C_Timer = _G.C_Timer
 local GetNumQuestLogEntries = _G.GetNumQuestLogEntries
 local GetQuestLogTitle = _G.GetQuestLogTitle
 local GetNumBattlefieldScores = _G.GetNumBattlefieldScores
@@ -35,9 +36,17 @@ local questEvents = {
 	QUEST_WATCH_UPDATE = true,
 	QUEST_FINISHED = true,
 	QUEST_LOG_UPDATE = true,
+	QUEST_ACCEPTED = true,
+	QUEST_TURNED_IN = true,
+	QUEST_REMOVED = true,
+	QUEST_COMPLETED = true,
+	QUEST_DATA_LOAD_RESULT = true,
 }
 
 local playerQuests = {}
+local playerQuestByID = {}
+local questsToUpdate = {}
+local questUpdatePending = false
 local auraSwitch = false
 
 local ignoreFrames = {
@@ -74,34 +83,147 @@ local function SafeHookTooltipMethod(target, methodName, hookFunc)
 	return ok
 end
 
+local function SafeRegisterEvent(frame, eventName, callback)
+	if not frame or type(eventName) ~= "string" then return false end
+	local ok = pcall(frame.RegisterEvent, frame, eventName, callback)
+	return ok
+end
+
 local function processAuraTooltip(_, unitid, ...)
 	auraSwitch = unitid == "player"
+end
+
+local function safeStrEq(a, b)
+	if a == nil or b == nil then return false end
+	local ok, res = pcall(function() return a == b end)
+	return ok and res
+end
+
+local function getTooltipLineText(line)
+	if not line then return nil end
+	if TooltipUtil and TooltipUtil.SurfaceArgs then
+		TooltipUtil.SurfaceArgs(line)
+	end
+	if line.leftText then return line.leftText end
+	if line.left and line.left.text then return line.left.text end
+	if line.left and line.left.value then return line.left.value end
+	return nil
+end
+
+local function getTooltipDataLines(tooltip)
+	if not tooltip or not tooltip.GetTooltipData then return nil end
+	local ok, data = pcall(tooltip.GetTooltipData, tooltip)
+	if not ok or not data or not data.lines then return nil end
+	return data.lines
 end
 
 local function checkPlayerQuest(tooltip)
 	tooltip = tooltip or GameTooltip
 	if not tooltip or not tooltip.NumLines then return false end
 	local tooltipName = tooltip.GetName and tooltip:GetName()
+
+	local dataLines = getTooltipDataLines(tooltip)
+	if dataLines then
+		for i = 1, #dataLines do
+			local text = getTooltipLineText(dataLines[i])
+			if text then
+				for questTitle in pairs(playerQuests) do
+					if safeStrEq(text, questTitle) then
+						return true
+					end
+				end
+			end
+		end
+		return false
+	end
+
 	if not tooltipName then return false end
 
 	for i = 1, tooltip:NumLines() do
 		local ttText = _G[tooltipName .. "TextLeft" .. i]
 		if ttText and CanAccessObject(ttText) then
 			local text = ttText:GetText()
-			if text and playerQuests[text] then
-				return true
+			if text then
+				-- Avoid indexing a table with a possibly "secret" string from the tooltip.
+				for questTitle in pairs(playerQuests) do
+					if safeStrEq(text, questTitle) then
+						return true
+					end
+				end
 			end
 		end
 	end
 	return false
 end
 
+local function cacheQuestInfo(questInfo, questID)
+	if not questInfo or not questInfo.title or questInfo.isHeader then return end
+	playerQuests[questInfo.title] = true
+	if questID then
+		playerQuestByID[questID] = questInfo.title
+	end
+end
+
+local function CacheQuest(questIndex, questID)
+	if not (C_QuestLog and C_QuestLog.GetInfo) then return end
+	if not questIndex and questID and C_QuestLog.GetLogIndexForQuestID then
+		questIndex = C_QuestLog.GetLogIndexForQuestID(questID)
+	end
+
+	if questIndex then
+		local questInfo = C_QuestLog.GetInfo(questIndex)
+		cacheQuestInfo(questInfo, questID or (questInfo and questInfo.questID))
+		return
+	end
+
+	if questID and C_QuestLog.RequestLoadQuestByID then
+		playerQuestByID[questID] = "UpdatePending"
+		questsToUpdate[questID] = true
+		C_QuestLog.RequestLoadQuestByID(questID)
+	end
+end
+
+local function CacheQuestByQuestID(questID)
+	if questID then
+		CacheQuest(nil, questID)
+	end
+end
+
+local function ScheduleQuestUpdateSweep()
+	if questUpdatePending or not (C_Timer and C_Timer.After) then return end
+	questUpdatePending = true
+	C_Timer.After(0.20, function()
+		questUpdatePending = false
+
+		for questID in pairs(questsToUpdate) do
+			if playerQuestByID[questID] == "UpdatePending" then
+				CacheQuestByQuestID(questID)
+			end
+			questsToUpdate[questID] = nil
+		end
+
+		for questID, title in pairs(playerQuestByID) do
+			if title == "UpdatePending" then
+				CacheQuestByQuestID(questID)
+			end
+		end
+	end)
+end
+
 function addon:doQuestTitleGrab()
 	if wipe then
 		wipe(playerQuests)
+		wipe(playerQuestByID)
+		wipe(questsToUpdate)
 	else
 		for k in pairs(playerQuests) do
 			playerQuests[k] = nil
+		end
+		for k in pairs(playerQuestByID) do
+			playerQuestByID[k] = nil
+		end
+		for k in pairs(questsToUpdate) do
+			questsToUpdate[k] = nil
 		end
 	end
 
@@ -110,9 +232,7 @@ function addon:doQuestTitleGrab()
 
 		for i = 1, C_QuestLog.GetNumQuestLogEntries() do
 			local questInfo = C_QuestLog.GetInfo(i)
-			if questInfo and questInfo.title and not questInfo.isHeader then
-				playerQuests[questInfo.title] = true
-			end
+			cacheQuestInfo(questInfo, questInfo and questInfo.questID)
 		end
 	else
 		if type(GetNumQuestLogEntries) ~= "function" or type(GetQuestLogTitle) ~= "function" then return end
@@ -269,9 +389,9 @@ function addon:EnableAddon()
 		end)
 	end
 
-	--activate triggers
+	--activate triggers (guard unknown events)
 	for eventName in pairs(questEvents) do
-		self:RegisterEvent(eventName)
+		SafeRegisterEvent(self, eventName)
 	end
 
 	--call quest scan just in case
@@ -304,7 +424,50 @@ function addon:OnEvent(event, ...)
 	end
 
 	if questEvents[event] then
-		self:doQuestTitleGrab()
+		if not IsRetail then
+			self:doQuestTitleGrab()
+			return
+		end
+
+		if event == "QUEST_LOG_UPDATE" then
+			self:doQuestTitleGrab()
+			return
+		end
+
+		if event == "QUEST_REMOVED" then
+			local questID = ...
+			if questID then
+				local title = playerQuestByID[questID]
+				if title then
+					playerQuests[title] = nil
+				end
+				playerQuestByID[questID] = nil
+				questsToUpdate[questID] = nil
+			else
+				self:doQuestTitleGrab()
+			end
+			return
+		end
+
+		if event == "QUEST_DATA_LOAD_RESULT" then
+			local questID, success = ...
+			if success and questID and playerQuestByID[questID] == "UpdatePending" then
+				CacheQuestByQuestID(questID)
+			end
+			if questID then
+				questsToUpdate[questID] = nil
+			end
+			ScheduleQuestUpdateSweep()
+			return
+		end
+
+		local questID = ...
+		if type(questID) == "number" then
+			CacheQuestByQuestID(questID)
+			ScheduleQuestUpdateSweep()
+		else
+			self:doQuestTitleGrab()
+		end
 	end
 end
 
