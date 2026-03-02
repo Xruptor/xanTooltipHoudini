@@ -45,8 +45,6 @@ local questEvents = {
 
 local playerQuests = {}
 local playerQuestByID = {}
-local questsToUpdate = {}
-local questUpdatePending = false
 local auraSwitch = false
 
 local ignoreFrames = {
@@ -54,6 +52,8 @@ local ignoreFrames = {
 	QuestInfoRewardsFrame = true,
 	MinimapCluster = true,
 }
+
+local questLoadPending = {}
 
 for i = 1, (_G.NUM_GROUP_LOOT_FRAMES or 4) do
 	ignoreFrames["GroupLootFrame" .. i] = true
@@ -168,6 +168,7 @@ end
 
 local function CacheQuest(questIndex, questID)
 	if not (C_QuestLog and C_QuestLog.GetInfo) then return end
+
 	if not questIndex and questID and C_QuestLog.GetLogIndexForQuestID then
 		questIndex = C_QuestLog.GetLogIndexForQuestID(questID)
 	end
@@ -179,9 +180,28 @@ local function CacheQuest(questIndex, questID)
 	end
 
 	if questID and C_QuestLog.RequestLoadQuestByID then
-		playerQuestByID[questID] = "UpdatePending"
-		questsToUpdate[questID] = true
+		if C_QuestLog.IsQuestDataLoaded and C_QuestLog.IsQuestDataLoaded(questID) then
+			local questIndex = C_QuestLog.GetLogIndexForQuestID and C_QuestLog.GetLogIndexForQuestID(questID)
+			if questIndex then
+				local questInfo = C_QuestLog.GetInfo(questIndex)
+				cacheQuestInfo(questInfo, questID)
+			end
+			return
+		end
+
+		if questLoadPending[questID] then
+			return
+		end
+
+		questLoadPending[questID] = true
 		C_QuestLog.RequestLoadQuestByID(questID)
+		if C_Timer and C_Timer.After then
+			C_Timer.After(2.0, function()
+				if questLoadPending[questID] then
+					questLoadPending[questID] = nil
+				end
+			end)
+		end
 	end
 end
 
@@ -191,32 +211,11 @@ local function CacheQuestByQuestID(questID)
 	end
 end
 
-local function ScheduleQuestUpdateSweep()
-	if questUpdatePending or not (C_Timer and C_Timer.After) then return end
-	questUpdatePending = true
-	C_Timer.After(0.20, function()
-		questUpdatePending = false
-
-		for questID in pairs(questsToUpdate) do
-			if playerQuestByID[questID] == "UpdatePending" then
-				CacheQuestByQuestID(questID)
-			end
-			questsToUpdate[questID] = nil
-		end
-
-		for questID, title in pairs(playerQuestByID) do
-			if title == "UpdatePending" then
-				CacheQuestByQuestID(questID)
-			end
-		end
-	end)
-end
-
 function addon:doQuestTitleGrab()
 	if wipe then
 		wipe(playerQuests)
 		wipe(playerQuestByID)
-		wipe(questsToUpdate)
+		wipe(questLoadPending)
 	else
 		for k in pairs(playerQuests) do
 			playerQuests[k] = nil
@@ -224,8 +223,8 @@ function addon:doQuestTitleGrab()
 		for k in pairs(playerQuestByID) do
 			playerQuestByID[k] = nil
 		end
-		for k in pairs(questsToUpdate) do
-			questsToUpdate[k] = nil
+		for k in pairs(questLoadPending) do
+			questLoadPending[k] = nil
 		end
 	end
 
@@ -444,7 +443,7 @@ function addon:OnEvent(event, ...)
 					playerQuests[title] = nil
 				end
 				playerQuestByID[questID] = nil
-				questsToUpdate[questID] = nil
+				questLoadPending[questID] = nil
 			else
 				self:doQuestTitleGrab()
 			end
@@ -453,20 +452,25 @@ function addon:OnEvent(event, ...)
 
 		if event == "QUEST_DATA_LOAD_RESULT" then
 			local questID, success = ...
-			if success and questID and playerQuestByID[questID] == "UpdatePending" then
-				CacheQuestByQuestID(questID)
-			end
+
 			if questID then
-				questsToUpdate[questID] = nil
+				questLoadPending[questID] = nil
 			end
-			ScheduleQuestUpdateSweep()
+
+			if success and questID then
+				local questIndex = C_QuestLog.GetLogIndexForQuestID and C_QuestLog.GetLogIndexForQuestID(questID)
+				if questIndex then
+					local questInfo = C_QuestLog.GetInfo(questIndex)
+					cacheQuestInfo(questInfo, questID)
+				end
+			end
+
 			return
 		end
 
 		local questID = ...
 		if type(questID) == "number" then
 			CacheQuestByQuestID(questID)
-			ScheduleQuestUpdateSweep()
 		else
 			self:doQuestTitleGrab()
 		end
